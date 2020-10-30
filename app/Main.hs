@@ -1,14 +1,11 @@
 module Main where
 
-import Lib
-import Types
+import Types.Game
 
 
 main :: IO ()
-main = someFunc
-
-list1 :: [[Int]]
-list1 = [[1,0,0],[0,1,0],[0,0,1]]
-
-drawGrid :: PlayGrid -> IO ()
-drawGrid grid = print grid
+main = do
+  let initVals = values $ grid initialState
+  grid1 <- generateRandomTile initVals
+  grid <- generateRandomTile grid1
+  mainChecks grid
