@@ -36,6 +36,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - Haskell2048
+    - random
 
 tests:
   Haskell2048-test:
@@ -47,3 +48,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - Haskell2048
+    - tasty
+    - tasty-hunit
+    - tasty-hedgehog
+    - hedgehog
+    - random

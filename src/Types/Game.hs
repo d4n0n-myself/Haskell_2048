@@ -1,12 +1,18 @@
 module Types.Game (
-  Move,
+  Move(..),
   PlayGrid(..),
   GameState(..),
   initialState,
   mainChecks,
   generateRandomTile,
   allMoves,
-  maxValue
+  maxValue,
+  gameWon,
+  updateGrid,
+  printGrid,
+  performMove,
+  getEmptyCells,
+  canPlay
 ) where
 
 
