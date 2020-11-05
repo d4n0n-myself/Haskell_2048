@@ -81,7 +81,7 @@ mainChecks grid
 gameWon :: [[Int]] -> Bool
 gameWon grid = do
   let anyMaxValues = filter (== maxValue) (concat grid)
-  [] /= anyMaxValues
+  not $ null anyMaxValues
 
 
 -- Добавить случайную ячейку
