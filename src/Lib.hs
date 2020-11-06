@@ -4,6 +4,7 @@ module Lib
 ) where
 
 import Types
+import Types.Game
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"

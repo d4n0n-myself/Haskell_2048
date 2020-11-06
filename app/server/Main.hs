@@ -2,7 +2,6 @@ module Main where
 
 import Types.Game
 
-
 main :: IO ()
 main = do
   let initVals = values $ grid initialState

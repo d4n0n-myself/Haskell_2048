@@ -1,10 +1,10 @@
 name:                Haskell2048
 version:             0.1.0.0
-github:              "githubuser/Haskell2048"
+github:              "d4n0n-myself/Haskell2048"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+author:              "d4n0n-myself"
+maintainer:          "d4n0n-myself"
+copyright:           "2020 d4n0n-myself"
 
 extra-source-files:
 - README.md
@@ -17,26 +17,48 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/Haskell2048#readme>
+description:         Please see the README on GitHub at <https://github.com/d4n0n-myself/Haskell2048#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - random
+- containers
+- MonadRandom
+- transformers
+- aeson
+- servant
+- servant-server
+- stm
+- wai
+- servant-client
+- http-client
 
 library:
   source-dirs: src
 
 executables:
-  Haskell2048-exe:
+  Haskell2048-server:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         app/server
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - Haskell2048
-    - random
+    - warp
+    - wai-extra
+    - optparse-generic
+
+  Haskell2048-client:
+    main:                Main.hs
+    source-dirs:         app/client
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - Haskell2048
 
 tests:
   Haskell2048-test:
@@ -52,4 +74,3 @@ tests:
     - tasty-hunit
     - tasty-hedgehog
     - hedgehog
-    - random

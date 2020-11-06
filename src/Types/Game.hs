@@ -1,3 +1,6 @@
+
+{-# LANGUAGE DeriveGeneric #-}
+
 module Types.Game (
   Move(..),
   PlayGrid(..),
@@ -15,7 +18,10 @@ module Types.Game (
   canPlay
 ) where
 
-
+import Control.Monad.Random
+import Data.Aeson
+import Data.Maybe
+import GHC.Generics
 import Prelude hiding (Left, Right)
 import Data.Char (toLower)
 import Data.List
@@ -28,17 +34,24 @@ data Move =
   | Down  -- | выполнить перемещение ячеек вниз
   | Left  -- | выполнить перемещение ячеек влево
   | Right -- | выполнить перемещение ячеек вправо
-   deriving (Eq,Show,Read)
+   deriving (Eq,Show,Read,Generic)
 
+instance FromJSON Move
+instance ToJSON Move
 
 -- | Игровое поле ( 4 * 4 ячейки )
-data PlayGrid = PlayGrid { values :: [[Int]] } deriving (Eq,Show,Read)
+data PlayGrid = PlayGrid { values :: [[Int]] } deriving (Eq,Show,Read,Generic)
 
+instance FromJSON PlayGrid
+instance ToJSON PlayGrid
 
 -- | Состояние игры
 data GameState = GameState
   { grid :: PlayGrid }
-   deriving (Eq,Show,Read)
+   deriving (Eq,Show,Read,Generic)
+
+instance FromJSON GameState
+instance ToJSON GameState
 
 
 -- Начальное состояние
@@ -94,9 +107,9 @@ gameWon grid = do
 generateRandomTile :: [[Int]] -> IO [[Int]]
 generateRandomTile values = do
   let candidates = getEmptyCells values
-  cell <- getRandom candidates -- получить ячейку для вставки
+  cell <- myGetRandom candidates -- получить ячейку для вставки
   let allValues = replicate 9 2 ++ [4]
-  value <- getRandom allValues  -- получить значение ячейки согласно заданной вероятности появления
+  value <- myGetRandom allValues  -- получить значение ячейки согласно заданной вероятности появления
   let res = updateGrid values cell value
   return res
 
@@ -111,8 +124,8 @@ updateGrid grid (row, col) val = do
 
 
 -- Выбрать случайный элемент из массива
-getRandom :: [a] -> IO a
-getRandom list = do
+myGetRandom :: [a] -> IO a
+myGetRandom list = do
   i <- randomRIO (0, length list-1)
   return (list !! i)
 
