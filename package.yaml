@@ -28,10 +28,21 @@ dependencies:
 - aeson
 - servant
 - servant-server
+- servant-client
+- servant-swagger
+- servant-swagger-ui
+- swagger2
 - stm
 - wai
-- servant-client
 - http-client
+- lens
+- uuid
+- warp
+- options
+- streaming-commons
+- ttrie
+- time
+- lzma
 
 library:
   source-dirs: src
@@ -59,6 +70,9 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - Haskell2048
+      - warp
+      - wai-extra
+      - optparse-generic
 
 tests:
   Haskell2048-test:

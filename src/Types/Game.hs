@@ -6,7 +6,7 @@ module Types.Game (
   PlayGrid(..),
   GameState(..),
   initialState,
-  mainChecks,
+--  mainChecks,
   generateRandomTile,
   allMoves,
   maxValue,
@@ -15,9 +15,13 @@ module Types.Game (
   printGrid,
   performMove,
   getEmptyCells,
-  canPlay
+  canPlay,
+  createGameState,
+  PlayerMove(..),
+  moveMappingFromInt
 ) where
 
+import System.Random
 import Control.Monad.Random
 import Data.Aeson
 import Data.Maybe
@@ -26,7 +30,14 @@ import Prelude hiding (Left, Right)
 import Data.Char (toLower)
 import Data.List
 import System.Random
-
+import Control.Lens ((&), (?~), mapped)
+import Data.Swagger
+    (
+        ToSchema, declareNamedSchema,
+        genericDeclareNamedSchema, defaultSchemaOptions,
+        schema, description, example, ToParamSchema
+    )
+import Data.UUID (UUID, fromString)
 
 -- | Возможные ходы игрока
 data Move =
@@ -36,71 +47,58 @@ data Move =
   | Right -- | выполнить перемещение ячеек вправо
    deriving (Eq,Show,Read,Generic)
 
+data PlayerMove = PlayerMove Move deriving (Eq, Show, Read, Generic)
+
 instance FromJSON Move
 instance ToJSON Move
+instance ToSchema Move
+
+instance FromJSON PlayerMove
+instance ToJSON PlayerMove
+instance ToSchema PlayerMove
+--instance ToSchema Move where
+--    declareNamedSchema proxy = genericDeclareNamedSchema defaultSchemaOptions proxy
+--        & mapped.schema.example ?~ toJSON Left
 
 -- | Игровое поле ( 4 * 4 ячейки )
 data PlayGrid = PlayGrid { values :: [[Int]] } deriving (Eq,Show,Read,Generic)
 
+
 instance FromJSON PlayGrid
 instance ToJSON PlayGrid
+instance ToSchema PlayGrid
+
 
 -- | Состояние игры
 data GameState = GameState
-  { grid :: PlayGrid }
+  { grid :: PlayGrid, uuid :: Maybe UUID }
    deriving (Eq,Show,Read,Generic)
+
 
 instance FromJSON GameState
 instance ToJSON GameState
+instance ToSchema GameState
 
 
 -- Начальное состояние
 initialState :: GameState
-initialState = GameState { grid = PlayGrid { values = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] } }
+initialState = GameState { grid = PlayGrid { values = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] },
+                            uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
+
+--createGameState :: IO GameState
+--createGameState = do
+--  let initVals = values $ grid initialState
+--  first <- generateRandomTile initVals
+--  second <- generateRandomTile first
+--  return GameState { grid = PlayGrid { values = second }, uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
 
 
--- Коллекция допустимых ходов
-allMoves :: [Move]
-allMoves = [Left, Right, Up, Down]
-
-
--- Маппинг значений клавиш на Move
-moveMapping :: [(Char, Move)]
-moveMapping = zip "wasd" [Up, Left, Down, Right]
-
-
--- Значение для победы
--- | Выигрыш наступает при сборке ячейки со значением 2048
-maxValue :: Int
-maxValue = 2048
-
-
--- Основные проверки игры
-mainChecks :: [[Int]] -> IO ()
-mainChecks grid
-  | canPlay grid = do
-      printGrid grid
-      if gameWon grid
-        then print "WIN"
-        else do
-          playerChosenMove <- loopWhileMoveNotMapped
-          let newGrid = performMove playerChosenMove grid
-          if grid /= newGrid
-            then do
-              new <- generateRandomTile newGrid
-              mainChecks new
-            else do
-              print "Nothing changed, make other move"
-              mainChecks grid
-  | otherwise = do
-      print "LOSE"
-
-
--- Выиграл ли игрок
-gameWon :: [[Int]] -> Bool
-gameWon grid = do
-  let anyMaxValues = filter (== maxValue) (concat grid)
-  not $ null anyMaxValues
+createGameState :: GameState
+createGameState = do
+  let initVals = values $ grid initialState
+  let first = generateRandomTile initVals
+  let second = generateRandomTile first
+  GameState { grid = PlayGrid { values = second }, uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
 
 
 -- Добавить случайную ячейку
@@ -109,7 +107,7 @@ generateRandomTile values = do
   let candidates = getEmptyCells values
   cell <- myGetRandom candidates -- получить ячейку для вставки
   let allValues = replicate 9 2 ++ [4]
-  value <- myGetRandom allValues  -- получить значение ячейки согласно заданной вероятности появления
+  value <- myGetRandom allValues
   let res = updateGrid values cell value
   return res
 
@@ -126,8 +124,62 @@ updateGrid grid (row, col) val = do
 -- Выбрать случайный элемент из массива
 myGetRandom :: [a] -> IO a
 myGetRandom list = do
+-- element / choice
   i <- randomRIO (0, length list-1)
   return (list !! i)
+
+
+-- Коллекция допустимых ходов
+allMoves :: [Move]
+allMoves = [Left, Right, Up, Down]
+
+
+-- Маппинг значений клавиш на Move
+moveMapping :: [(Char, Move)]
+moveMapping = zip "wasd" [Up, Left, Down, Right]
+
+
+-- Маппинг значений на Move
+moveMappingFromInt :: [(Int, Move)]
+moveMappingFromInt = zip [1,2,3,4] [Up, Left, Down, Right]
+
+
+-- Значение для победы
+-- | Выигрыш наступает при сборке ячейки со значением 2048
+maxValue :: Int
+maxValue = 2048
+
+
+-- Основные проверки игры
+--mainChecks :: [[Int]] -> IO ()
+--mainChecks grid
+--  | canPlay grid = do
+--      printGrid grid
+--      if gameWon grid
+--        then print "WIN"
+--        else do
+--          playerChosenMove <- loopWhileMoveNotMapped
+--          let newGrid = performMove playerChosenMove grid
+--          if grid /= newGrid
+--            then do
+--              new <- generateRandomTile newGrid
+--              mainChecks new
+--            else do
+--              print "Nothing changed, make other move"
+--              mainChecks grid
+--  | otherwise = do
+--      print "LOSE"
+
+
+-- Выиграл ли игрок
+gameWon :: [[Int]] -> Bool
+gameWon grid = do
+  let anyMaxValues = filter (== maxValue) (concat grid)
+  not $ null anyMaxValues
+
+
+
+
 
 
 -- Получить координаты пустых ячеек
@@ -141,6 +193,7 @@ getEmptyCells grid = do
 -- сложить строку влево
 mergeToLeft :: [Int] -> [Int]
 mergeToLeft row = do
+  -- Data.Maybe catMaybes
   let filtered = filter (/= 0) row -- отсекаем 0
   let merged = combine filtered -- объединяем возможные
   let padding = replicate (length row - length merged) 0 -- создаем необходимый "хвост" до 4 элементов
@@ -158,6 +211,7 @@ combine list = list
 -- Проверка возможности выполнения действий
 canPlay :: [[Int]] -> Bool
 canPlay grid = do
+-- изменить проверку так, чтобы учесть случай когда может что-то поменяться даже при всех занятых клетках
   let emptyCells = getEmptyCells grid
   let ln = length emptyCells
   ln > 0
@@ -200,3 +254,44 @@ loopWhileMoveNotMapped = do
   case lookup (toLower inputChar) moveMapping of
     Just x  -> return x
     Nothing -> loopWhileMoveNotMapped
+
+
+
+
+--  let lngh = length candidates
+--  let cell = candidates!!cellIndex -- получить ячейку для вставки
+--  let cell = candidates!!0
+
+--  let value = rnd2 (length allValues)  -- получить значение ячейки согласно заданной вероятности появления
+--  let value = allValues!!0
+
+--  show value
+--  [[0]]
+--  let coordinatesAsList = pairToList cell
+
+--somethingThatReturnsIO >>= (\x -> somethingElseThatReturnsIO $ pureFunction x)
+
+--pairToList :: IO (a, a) -> IO [a]
+--pairToList (x,y) = [x,y]
+--IO (a, a)
+
+--  let row = coordinates!!0
+--  let col = coordinates!!1
+--x123 :: (Random a, Num a) => a -> a
+--x123 num = do
+--   x1 <- getStdRandom (randomR (1,num))
+--   x1
+
+
+--getRandomR (1,6)
+
+--rnd3 = do
+--  g <- newStdGen
+--  take 1 $ (randomRs (1, 10) g)
+
+
+--myGetRandom1 :: (Random a, Num a) => a -> IO a
+--myGetRandom1 maxVal = getStdRandom (randomR (0, maxVal))
+--
+--rnd2 :: (MonadRandom m, Random a, Num a) => a -> m a
+--rnd2 num = do getRandomR (1, num)
