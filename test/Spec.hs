@@ -23,8 +23,8 @@ tests = testGroup "Tests"
 
 gameWonTests :: [TestTree]
 gameWonTests =
-  [ testCase "initState is not a win" $
-    gameWon (values $ grid initialState) @?= False
+  [ testCase "some start state is not a win" $
+    gameWon ([[2,0,0,0],[0,0,0,0],[2,0,0,0],[0,0,0,0]]) @?= False
   , testCase "2048 is a win" $
     gameWon ([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2048]]) @?= True
   ]
@@ -33,9 +33,9 @@ gameWonTests =
 generateRandomTileTests :: [TestTree]
 generateRandomTileTests =
   [ testCase "tile was generated" $ do
-      res <- generateRandomTile $ values $ grid initialState
-      let init = values $ grid initialState
-      assertBool "generate failed" (res /= init)
+      let initVals = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+      res <- generateRandomTile initVals
+      assertBool "generate failed" (res /= initVals)
   ]
 
 updateGridTests :: [TestTree]

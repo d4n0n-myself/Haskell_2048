@@ -5,7 +5,7 @@ module Types.Game (
   Move(..),
   PlayGrid(..),
   GameState(..),
-  initialState,
+--  initialState,
 --  mainChecks,
   generateRandomTile,
   allMoves,
@@ -38,6 +38,7 @@ import Data.Swagger
         schema, description, example, ToParamSchema
     )
 import Data.UUID (UUID, fromString)
+import Data.UUID.V4 (nextRandom)
 
 -- | Возможные ходы игрока
 data Move =
@@ -71,7 +72,7 @@ instance ToSchema PlayGrid
 
 -- | Состояние игры
 data GameState = GameState
-  { grid :: PlayGrid, uuid :: Maybe UUID }
+  { grid :: PlayGrid, uuid :: UUID }
    deriving (Eq,Show,Read,Generic)
 
 
@@ -80,25 +81,13 @@ instance ToJSON GameState
 instance ToSchema GameState
 
 
--- Начальное состояние
-initialState :: GameState
-initialState = GameState { grid = PlayGrid { values = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] },
-                            uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
-
---createGameState :: IO GameState
---createGameState = do
---  let initVals = values $ grid initialState
---  first <- generateRandomTile initVals
---  second <- generateRandomTile first
---  return GameState { grid = PlayGrid { values = second }, uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
-
-
-createGameState :: GameState
+createGameState :: IO GameState
 createGameState = do
-  let initVals = values $ grid initialState
-  let first = generateRandomTile initVals
-  let second = generateRandomTile first
-  GameState { grid = PlayGrid { values = second }, uuid = fromString "860F2CA7-2466-4E51-A559-DA9737712193" }
+  let initVals = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+  first <- generateRandomTile initVals
+  second <- generateRandomTile first
+  newUuid <- nextRandom
+  return GameState { grid = PlayGrid { values = second }, uuid = newUuid }
 
 
 -- Добавить случайную ячейку
@@ -140,8 +129,12 @@ moveMapping = zip "wasd" [Up, Left, Down, Right]
 
 
 -- Маппинг значений на Move
-moveMappingFromInt :: [(Int, Move)]
-moveMappingFromInt = zip [1,2,3,4] [Up, Left, Down, Right]
+moveMappingFromInt :: Int -> Move --[(Int, Move)]
+moveMappingFromInt value = do
+  let dictionary = zip [1,2,3,4] [Up, Left, Down, Right]
+  case lookup value dictionary of
+      Nothing -> error "Can't map move"
+      Just x  -> x
 
 
 -- Значение для победы
@@ -176,10 +169,6 @@ gameWon :: [[Int]] -> Bool
 gameWon grid = do
   let anyMaxValues = filter (== maxValue) (concat grid)
   not $ null anyMaxValues
-
-
-
-
 
 
 -- Получить координаты пустых ячеек
@@ -231,12 +220,14 @@ printGrid value = do
   putStr "\n\n\n\n\n"
   mapData value
 
+
 mapData :: [[Int]] -> IO ()
 mapData (a:as) = do
   mapRow a
   if as /= []
     then mapData as
     else return ()
+
 
 mapRow :: [Int] -> IO ()
 mapRow (b:bs) = do
@@ -255,43 +246,3 @@ loopWhileMoveNotMapped = do
     Just x  -> return x
     Nothing -> loopWhileMoveNotMapped
 
-
-
-
---  let lngh = length candidates
---  let cell = candidates!!cellIndex -- получить ячейку для вставки
---  let cell = candidates!!0
-
---  let value = rnd2 (length allValues)  -- получить значение ячейки согласно заданной вероятности появления
---  let value = allValues!!0
-
---  show value
---  [[0]]
---  let coordinatesAsList = pairToList cell
-
---somethingThatReturnsIO >>= (\x -> somethingElseThatReturnsIO $ pureFunction x)
-
---pairToList :: IO (a, a) -> IO [a]
---pairToList (x,y) = [x,y]
---IO (a, a)
-
---  let row = coordinates!!0
---  let col = coordinates!!1
---x123 :: (Random a, Num a) => a -> a
---x123 num = do
---   x1 <- getStdRandom (randomR (1,num))
---   x1
-
-
---getRandomR (1,6)
-
---rnd3 = do
---  g <- newStdGen
---  take 1 $ (randomRs (1, 10) g)
-
-
---myGetRandom1 :: (Random a, Num a) => a -> IO a
---myGetRandom1 maxVal = getStdRandom (randomR (0, maxVal))
---
---rnd2 :: (MonadRandom m, Random a, Num a) => a -> m a
---rnd2 num = do getRandomR (1, num)

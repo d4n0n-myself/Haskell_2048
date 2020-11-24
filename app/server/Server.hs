@@ -34,12 +34,14 @@ gameServer =
     :<|> makeMove)
     :<|> swaggerDocServer
 
-createGame :: AppM UUID
+createGame :: AppM GameState
 createGame = do
     gameStorage <- ask
-    newGameGuid <- liftIO nextRandom
-    liftIO $ atomically $ insert newGameGuid createGameState gameStorage
-    return newGameGuid
+--    newGameGuid <- liftIO nextRandom
+    newGameState <- liftIO createGameState
+    let newGameGuid = uuid $ newGameState
+    liftIO $ atomically $ insert newGameGuid newGameState gameStorage
+    return newGameState
 
 getGame :: Maybe UUID -> AppM GameState
 getGame Nothing = failingHandler "Game-Uuid header is required!"
@@ -54,15 +56,43 @@ makeMove :: Maybe UUID -> Maybe Int -> AppM GameState
 makeMove Nothing Nothing = failingHandler "Parameters not provided"
 makeMove Nothing _ = failingHandler "UUID not provided"
 makeMove _ Nothing = failingHandler "Move not provided"
-makeMove (Just guid) (Just moveValue) = do
-  if (moveValue > 4 || moveValue < 1)
+makeMove (Just guid) (Just moveInt) = do
+  if (moveInt > 4 || moveInt < 1)
         then failingHandler "Moves can be only [1..4]"
         else do
             gameStorage <- ask
             gameStateMaybe <- liftIO $ atomically $ lookup guid gameStorage
             case gameStateMaybe of
                 Nothing -> failingHandler $ "Game with UUID '" ++ show guid ++ "' does not exist!"
-                Just gameState -> return gameState -- todo
+                Just gameState -> do
+                  -- return if game lost (canPlay)
+                  -- return if game won (gameWon)
+                  let moveValue = moveMappingFromInt moveInt
+                  let afterMoveGrid = performMove moveValue (values $ grid $ gameState)
+                  newTiles <- liftIO $ generateRandomTile afterMoveGrid
+                  let newGameState = GameState { grid = PlayGrid { values = newTiles }, uuid = guid }
+                  liftIO $ atomically $ insert guid newGameState gameStorage
+                  return newGameState -- todo
+
+-- Основные проверки игры
+--mainChecks :: [[Int]] -> IO ()
+--mainChecks grid
+--  | canPlay grid = do
+--      printGrid grid
+--      if gameWon grid
+--        then print "WIN"
+--        else do
+--          playerChosenMove <- loopWhileMoveNotMapped
+--          let newGrid = performMove playerChosenMove grid
+--          if grid /= newGrid
+--            then do
+--              new <- generateRandomTile newGrid
+--              mainChecks new
+--            else do
+--              print "Nothing changed, make other move"
+--              mainChecks grid
+--  | otherwise = do
+--      print "LOSE"
 
 failingHandler message = throwError $ err400 { errReasonPhrase = message }
 

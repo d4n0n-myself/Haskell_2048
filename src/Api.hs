@@ -12,7 +12,7 @@ import Types
 import Types.Game
 
 type Api
-    =    "CreateGame" :> Post '[JSON] UUID
+    =    "CreateGame" :> Post '[JSON] GameState
     :<|> "GetGame"    :> Header "Game-Uuid" UUID :> Get '[JSON] GameState
     :<|> "MakeMove"   :> Header "Game-Uuid" UUID :> Header "Move" Int :> Get '[JSON] GameState
 
