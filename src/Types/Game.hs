@@ -5,17 +5,15 @@ module Types.Game (
   Move(..),
   PlayGrid(..),
   GameState(..),
---  initialState,
---  mainChecks,
   generateRandomTile,
   allMoves,
   maxValue,
-  gameWon,
+  checkIfGameWon,
   updateGrid,
   printGrid,
   performMove,
   getEmptyCells,
-  canPlay,
+  checkIfGameLost,
   createGameState,
   PlayerMove(..),
   moveMappingFromInt
@@ -37,7 +35,7 @@ import Data.Swagger
         genericDeclareNamedSchema, defaultSchemaOptions,
         schema, description, example, ToParamSchema
     )
-import Data.UUID (UUID, fromString)
+import Data.UUID (UUID)
 import Data.UUID.V4 (nextRandom)
 
 -- | Возможные ходы игрока
@@ -57,9 +55,6 @@ instance ToSchema Move
 instance FromJSON PlayerMove
 instance ToJSON PlayerMove
 instance ToSchema PlayerMove
---instance ToSchema Move where
---    declareNamedSchema proxy = genericDeclareNamedSchema defaultSchemaOptions proxy
---        & mapped.schema.example ?~ toJSON Left
 
 -- | Игровое поле ( 4 * 4 ячейки )
 data PlayGrid = PlayGrid { values :: [[Int]] } deriving (Eq,Show,Read,Generic)
@@ -72,7 +67,7 @@ instance ToSchema PlayGrid
 
 -- | Состояние игры
 data GameState = GameState
-  { grid :: PlayGrid, uuid :: UUID }
+  { grid :: PlayGrid, uuid :: UUID, gameWon :: Bool, gameLost :: Bool }
    deriving (Eq,Show,Read,Generic)
 
 
@@ -87,7 +82,7 @@ createGameState = do
   first <- generateRandomTile initVals
   second <- generateRandomTile first
   newUuid <- nextRandom
-  return GameState { grid = PlayGrid { values = second }, uuid = newUuid }
+  return GameState { grid = PlayGrid { values = second }, uuid = newUuid, gameWon = False, gameLost = False }
 
 
 -- Добавить случайную ячейку
@@ -143,30 +138,9 @@ maxValue :: Int
 maxValue = 2048
 
 
--- Основные проверки игры
---mainChecks :: [[Int]] -> IO ()
---mainChecks grid
---  | canPlay grid = do
---      printGrid grid
---      if gameWon grid
---        then print "WIN"
---        else do
---          playerChosenMove <- loopWhileMoveNotMapped
---          let newGrid = performMove playerChosenMove grid
---          if grid /= newGrid
---            then do
---              new <- generateRandomTile newGrid
---              mainChecks new
---            else do
---              print "Nothing changed, make other move"
---              mainChecks grid
---  | otherwise = do
---      print "LOSE"
-
-
 -- Выиграл ли игрок
-gameWon :: [[Int]] -> Bool
-gameWon grid = do
+checkIfGameWon :: [[Int]] -> Bool
+checkIfGameWon grid = do
   let anyMaxValues = filter (== maxValue) (concat grid)
   not $ null anyMaxValues
 
@@ -198,12 +172,12 @@ combine list = list
 
 
 -- Проверка возможности выполнения действий
-canPlay :: [[Int]] -> Bool
-canPlay grid = do
+checkIfGameLost :: [[Int]] -> Bool
+checkIfGameLost grid = do
 -- изменить проверку так, чтобы учесть случай когда может что-то поменяться даже при всех занятых клетках
   let emptyCells = getEmptyCells grid
   let ln = length emptyCells
-  ln > 0
+  ln <= 0
 
 
 -- Выполнить действие игрока

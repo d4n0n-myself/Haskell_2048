@@ -65,34 +65,34 @@ makeMove (Just guid) (Just moveInt) = do
             case gameStateMaybe of
                 Nothing -> failingHandler $ "Game with UUID '" ++ show guid ++ "' does not exist!"
                 Just gameState -> do
-                  -- return if game lost (canPlay)
-                  -- return if game won (gameWon)
-                  let moveValue = moveMappingFromInt moveInt
-                  let afterMoveGrid = performMove moveValue (values $ grid $ gameState)
-                  newTiles <- liftIO $ generateRandomTile afterMoveGrid
-                  let newGameState = GameState { grid = PlayGrid { values = newTiles }, uuid = guid }
-                  liftIO $ atomically $ insert guid newGameState gameStorage
-                  return newGameState -- todo
+                  if gameWon $ gameState then return gameState
+                  else do
+                    if gameLost $ gameState then return gameState
+                    else do
+                      let moveValue = moveMappingFromInt moveInt
+                      let afterMoveGrid = performMove moveValue (values $ grid $ gameState)
+                      let isGameLost = checkIfGameLost afterMoveGrid
+                      let isGameWon = checkIfGameWon afterMoveGrid
+                      if (isGameLost || isGameWon) then return GameState {
+                                                                 grid = PlayGrid { values = afterMoveGrid },
+                                                                 uuid = guid,
+                                                                 gameWon = isGameWon,
+                                                                 gameLost = isGameLost
+                                                               }
+                      else do
+                        if ((values $ grid $ gameState) == afterMoveGrid)
+                          then failingHandler "Nothing changed, try another direction"
+                          else do
+                            newTiles <- liftIO $ generateRandomTile afterMoveGrid
+                            let newGameState = GameState {
+                              grid = PlayGrid { values = newTiles },
+                              uuid = guid,
+                              gameWon = isGameWon,
+                              gameLost = isGameLost
+                            }
+                            liftIO $ atomically $ insert guid newGameState gameStorage
+                            return newGameState
 
--- Основные проверки игры
---mainChecks :: [[Int]] -> IO ()
---mainChecks grid
---  | canPlay grid = do
---      printGrid grid
---      if gameWon grid
---        then print "WIN"
---        else do
---          playerChosenMove <- loopWhileMoveNotMapped
---          let newGrid = performMove playerChosenMove grid
---          if grid /= newGrid
---            then do
---              new <- generateRandomTile newGrid
---              mainChecks new
---            else do
---              print "Nothing changed, make other move"
---              mainChecks grid
---  | otherwise = do
---      print "LOSE"
 
 failingHandler message = throwError $ err400 { errReasonPhrase = message }
 
