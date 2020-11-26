@@ -13,20 +13,20 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests"
-  [ testGroup "gameWon tests" gameWonTests
+  [ testGroup "checkIfGameWon tests" checkIfGameWonTests
   , testGroup "generateRandomTileTests tests" generateRandomTileTests
   , testGroup "updateGrid tests" updateGridTests
   , testGroup "performMove tests" performMoveTests
   , testGroup "getEmptyCells tests" getEmptyCellsTests
-  , testGroup "canPlay tests" canPlayTests
+  , testGroup "checkIfGameLost tests" checkIfGameLostTests
   ]
 
-gameWonTests :: [TestTree]
-gameWonTests =
+checkIfGameWonTests :: [TestTree]
+checkIfGameWonTests =
   [ testCase "some start state is not a win" $
-    gameWon ([[2,0,0,0],[0,0,0,0],[2,0,0,0],[0,0,0,0]]) @?= False
+    checkIfGameWon ([[2,0,0,0],[0,0,0,0],[2,0,0,0],[0,0,0,0]]) @?= False
   , testCase "2048 is a win" $
-    gameWon ([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2048]]) @?= True
+    checkIfGameWon ([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2048]]) @?= True
   ]
 
 
@@ -117,9 +117,9 @@ getEmptyCellsTests =
   ]
 
 
-canPlayTests :: [TestTree]
-canPlayTests =
+checkIfGameLostTests :: [TestTree]
+checkIfGameLostTests =
   [ testCase "lost if no moves left" $ do
       let vals = [[8,2,4,2],[16,32,16,64],[32,2,8,4],[16,64,256,128]]
-      canPlay vals @?= False
+      checkIfGameLost vals @?= True
   ]

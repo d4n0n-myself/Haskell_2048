@@ -22,3 +22,7 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 .idea/
+Haskell2048.cabal
+out/
+stack.yaml.lock
+Haskell2048.iml

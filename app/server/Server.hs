@@ -8,9 +8,7 @@ import Servant
 import Servant.Swagger
 import Servant.Swagger.UI
 import Data.Swagger
-import Data.Maybe (fromJust)
 import Data.UUID (UUID)
-import Data.UUID.V4 (nextRandom)
 import Control.Lens
 import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
@@ -19,7 +17,6 @@ import Control.Monad.Trans.Class (lift)
 import Control.Concurrent.STM (atomically)
 
 import Types
-import Types.Game
 import Api
 
 type Cache = Map UUID GameState
@@ -37,7 +34,6 @@ gameServer =
 createGame :: AppM GameState
 createGame = do
     gameStorage <- ask
---    newGameGuid <- liftIO nextRandom
     newGameState <- liftIO createGameState
     let newGameGuid = uuid $ newGameState
     liftIO $ atomically $ insert newGameGuid newGameState gameStorage
@@ -92,7 +88,6 @@ makeMove (Just guid) (Just moveInt) = do
                             }
                             liftIO $ atomically $ insert guid newGameState gameStorage
                             return newGameState
-
 
 failingHandler message = throwError $ err400 { errReasonPhrase = message }
 

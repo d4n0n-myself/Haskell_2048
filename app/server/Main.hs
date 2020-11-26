@@ -6,22 +6,20 @@ import Network.Wai.Handler.Warp
 import Data.Streaming.Network.Internal (HostPreference (Host))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.Map (empty)
-import GHC.Show
 import Server (serverApplication)
-import System.Random
 
 main :: IO ()
 main = runCommand $ \options _ -> do
     putStrLn $ (toString options)
-    let warpSettings = optionsToWarpSettings
+    let warpSettings = optionsToWarpSettings options
     gameStorage <- atomically empty
     runSettings warpSettings $ serverApplication gameStorage
 
-optionsToWarpSettings :: Settings
-optionsToWarpSettings
+optionsToWarpSettings :: MyOptions -> Settings
+optionsToWarpSettings myOptions
     = defaultSettings
-        & setHost (Host "127.0.0.1")
-        & setPort (5010)
+        & setHost (Host $ host $ myOptions)
+        & setPort (port $ myOptions)
         & setTimeout (60)
 
 data MyOptions = MyOptions
